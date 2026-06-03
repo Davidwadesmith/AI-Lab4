@@ -1,0 +1,6 @@
+datasets
+jieba
+numpy
+pandas
+matplotlib
+transformers==4.53.2
