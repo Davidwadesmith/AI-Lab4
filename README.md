@@ -7,6 +7,8 @@ This repository automates two openPangu labs from the notebooks:
 
 The local machine does not need a GPU/NPU. Local validation uses smoke mode and unit tests. Full inference and training run after cloning this repository onto Ascend 910B servers.
 
+The one-click scripts include environment bootstrap: they can create a Python virtual environment, load Ascend toolkit variables, install Python packages, run optional torch/torch-npu install commands, download model/data through user-provided commands, and clone MindSpeed-LLM. System-level Ascend driver, firmware, and CANN installation still need to exist in the server image or be installed by an administrator.
+
 ## Local Validation
 
 ```bash
@@ -30,6 +32,25 @@ Edit `configs/exp2_1.env`:
 - `RUN_MODE=full`
 - `MODEL_PATH=/path/to/openPangu-Embedded-7B-V1.1`
 - Optional judge API variables.
+
+For a first server run, keep `RUN_MODE=smoke` and configure bootstrap:
+
+```bash
+AUTO_SETUP_ENV=1
+PYTHON_BIN=python3.10
+VENV_DIR=.venv
+ASCEND_TOOLKIT_ENV=/usr/local/Ascend/ascend-toolkit/set_env.sh
+
+# Fill these only if your image does not already contain compatible packages.
+TORCH_INSTALL_COMMAND="pip install torch==2.1.0"
+TORCH_NPU_INSTALL_COMMAND="pip install torch-npu==2.1.0"
+
+# Optional. Use any command that creates MODEL_PATH.
+MODEL_PATH=/home/ma-user/work/models/openPangu-Embedded-7B-V1.1
+MODEL_DOWNLOAD_COMMAND="git clone <model-repo-url> /home/ma-user/work/models/openPangu-Embedded-7B-V1.1"
+```
+
+Values containing spaces must be quoted because the Bash script sources the `.env` file.
 
 Run:
 
@@ -64,6 +85,33 @@ Edit `configs/exp2_2.env`:
 - `MCORE_MODEL_PATH=/cache/ckpts/openPangu_7B_mcore`
 - `ASCEND_RT_VISIBLE_DEVICES=0,1,2,3`
 
+Configure bootstrap on the training server:
+
+```bash
+AUTO_SETUP_ENV=1
+PYTHON_BIN=python3.10
+VENV_DIR=.venv
+ASCEND_TOOLKIT_ENV=/usr/local/Ascend/ascend-toolkit/set_env.sh
+
+# Fill these only if your image does not already contain compatible packages.
+TORCH_INSTALL_COMMAND="pip install torch==2.1.0"
+TORCH_NPU_INSTALL_COMMAND="pip install torch-npu==2.1.0"
+
+# Clone MindSpeed-LLM automatically when MINDSPEED_LLM_ROOT does not exist.
+AUTO_CLONE_MINDSPEED=1
+MINDSPEED_LLM_ROOT=/home/ma-user/work/MindSpeed-LLM
+MINDSPEED_LLM_REPO=https://gitee.com/ascend/MindSpeed-LLM.git
+MINDSPEED_LLM_REF=
+
+# Optional. Use commands that create the configured paths.
+HF_MODEL_PATH=/home/ma-user/work/models/openPangu-7B-hf
+MODEL_DOWNLOAD_COMMAND="git clone <model-repo-url> /home/ma-user/work/models/openPangu-7B-hf"
+SOURCE_JSONL=/home/ma-user/work/data/chinese_deepseek_r1_distill.jsonl
+DATA_DOWNLOAD_COMMAND="python scripts/download_data.py"
+```
+
+Values containing spaces must be quoted because the Bash script sources the `.env` file.
+
 Run smoke mode first:
 
 ```bash
@@ -85,3 +133,20 @@ Main outputs:
 ## Notes
 
 Do not commit model weights, raw datasets, MindSpeed source trees, checkpoints, or generated outputs. They are intentionally ignored by `.gitignore`.
+
+The scripts cannot install kernel drivers, firmware, or CANN system packages without the correct server image and privileges. Verify these first when using a fresh server:
+
+```bash
+npu-smi info
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+python - <<'PY'
+try:
+    import torch
+    import torch_npu
+    print(torch.__version__)
+    print("torch_npu ok")
+except Exception as exc:
+    print(exc)
+    raise
+PY
+```

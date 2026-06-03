@@ -17,6 +17,17 @@ source "${ENV_FILE}"
 set +a
 
 echo "[exp2_2] run mode: ${RUN_MODE:-smoke}"
+BOOTSTRAP_PYTHON="${PYTHON_BIN:-python3.10}"
+if ! command -v "${BOOTSTRAP_PYTHON}" >/dev/null 2>&1; then
+  BOOTSTRAP_PYTHON="python3"
+fi
+
+BOOTSTRAP_COMMANDS="$("${BOOTSTRAP_PYTHON}" -m src.common.bootstrap --env "${ENV_FILE}" --experiment exp2_2)"
+if [[ -n "${BOOTSTRAP_COMMANDS}" ]]; then
+  echo "[exp2_2] bootstrapping environment"
+  eval "${BOOTSTRAP_COMMANDS}"
+fi
+
 python --version
 
 if [[ "${SKIP_PIP_INSTALL:-0}" != "1" ]]; then
