@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from pathlib import Path
 
 from src.common.io import read_jsonl
-from src.exp2_2_sft.main import _join_config_path
+from src.exp2_2_sft.main import _ensure_preprocess_output_dir, _join_config_path
 from src.exp2_2_sft.parse_logs import parse_training_log
 from src.exp2_2_sft.prepare_data import convert_xhs_records, load_dataset_records, should_convert_mcore
 from src.exp2_2_sft.train import build_run_matrix, build_train_command
@@ -63,6 +63,15 @@ class SftExperimentTests(unittest.TestCase):
             self.assertFalse(should_convert_mcore(existing, force=False))
             self.assertTrue(should_convert_mcore(existing, force=True))
             self.assertTrue(should_convert_mcore(missing, force=False))
+
+    def test_ensure_preprocess_output_dir_creates_prefix_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prefix = Path(tmp) / "cache" / "finetune" / "sft"
+
+            created = _ensure_preprocess_output_dir(str(prefix))
+
+            self.assertTrue(created.exists())
+            self.assertEqual(created, prefix.parent)
 
     def test_load_dataset_records_reads_configured_split(self):
         original = sys.modules.get("datasets")

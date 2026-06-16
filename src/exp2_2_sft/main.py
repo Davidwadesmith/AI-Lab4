@@ -39,6 +39,10 @@ def _join_config_path(root: str, *parts: str) -> str:
     return str(Path(root, *parts))
 
 
+def _ensure_preprocess_output_dir(output_prefix: str) -> Path:
+    return ensure_dir(Path(output_prefix).parent)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run openPangu MindSpeed SFT experiment.")
     parser.add_argument("--env", required=True, help="Path to exp2_2 env file.")
@@ -72,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     code_root = env.get("MINDSPEED_LLM_ROOT", "/home/ma-user/work/MindSpeed-LLM")
     seq_length = int(env.get("SEQ_LENGTH", "8192"))
     cache_prefix = env.get("DATA_CACHE_PREFIX", str(output_root / "cache" / "sft"))
+    _ensure_preprocess_output_dir(cache_prefix)
     commands = []
 
     preprocess_command = build_preprocess_command(
