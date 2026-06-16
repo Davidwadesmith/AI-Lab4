@@ -44,7 +44,10 @@ def build_bootstrap_plan(env: Mapping[str, str], *, experiment: str) -> Bootstra
         commands.append(f"if [[ ! -d {_quoted(venv_dir)} ]]; then {python_bin} -m venv {_quoted(venv_dir)}; fi")
         commands.append(f"source {_quoted(venv_dir.rstrip('/') + '/bin/activate')}")
 
-    commands.append("python -m pip install --upgrade pip setuptools wheel")
+    commands.append("python -m pip install --upgrade pip wheel")
+    setuptools_install = env.get("SETUPTOOLS_INSTALL_COMMAND", "").strip()
+    if setuptools_install:
+        commands.append(setuptools_install)
 
     torch_install = env.get("TORCH_INSTALL_COMMAND", "").strip()
     torch_npu_install = env.get("TORCH_NPU_INSTALL_COMMAND", "").strip()

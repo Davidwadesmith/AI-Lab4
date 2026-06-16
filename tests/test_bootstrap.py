@@ -25,6 +25,20 @@ class BootstrapPlanTests(unittest.TestCase):
         self.assertIn("pip install torch==2.1.0", plan.commands)
         self.assertIn("pip install torch-npu==2.1.0", plan.commands)
         self.assertIn('if [[ ! -e "/models/pangu" ]]; then git clone https://example.invalid/pangu /models/pangu; fi', plan.commands)
+        self.assertIn("python -m pip install --upgrade pip wheel", plan.commands)
+        self.assertNotIn("python -m pip install --upgrade pip setuptools wheel", plan.commands)
+
+    def test_setuptools_install_command_is_explicit(self):
+        plan = build_bootstrap_plan(
+            {
+                "AUTO_SETUP_ENV": "1",
+                "VENV_DIR": ".venv",
+                "SETUPTOOLS_INSTALL_COMMAND": 'python -m pip install "setuptools<70"',
+            },
+            experiment="exp2_2",
+        )
+
+        self.assertIn('python -m pip install "setuptools<70"', plan.commands)
 
     def test_exp2_2_plan_clones_mindspeed_and_downloads_data(self):
         plan = build_bootstrap_plan(
