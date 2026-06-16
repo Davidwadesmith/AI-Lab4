@@ -5,12 +5,19 @@ from types import SimpleNamespace
 from pathlib import Path
 
 from src.common.io import read_jsonl
+from src.exp2_2_sft.main import _join_config_path
 from src.exp2_2_sft.parse_logs import parse_training_log
 from src.exp2_2_sft.prepare_data import convert_xhs_records, load_dataset_records, should_convert_mcore
-from src.exp2_2_sft.train import build_run_matrix
+from src.exp2_2_sft.train import build_run_matrix, build_train_command
 
 
 class SftExperimentTests(unittest.TestCase):
+    def test_join_config_path_preserves_linux_absolute_paths(self):
+        self.assertEqual(
+            _join_config_path("/src/init/user/outputs/exp2_2", "logs", "run.log"),
+            "/src/init/user/outputs/exp2_2/logs/run.log",
+        )
+
     def test_convert_xhs_records_filters_and_formats_mindspeed_jsonl(self):
         records = [
             {"repo_name": "xhs/xhs", "instruction": "写一段小红书文案", "output": "好用到想分享"},
@@ -71,6 +78,33 @@ class SftExperimentTests(unittest.TestCase):
                 sys.modules["datasets"] = original
 
         self.assertEqual(records[0]["instruction"], "a")
+
+    def test_build_train_command_uses_space_saving_training_options(self):
+        command = build_train_command(
+            code_root="/src/init/Shared/MindSpeed-LLM",
+            npu_devices="0,1,2,3",
+            npus_per_node=4,
+            master_port=6000,
+            data_path="/src/init/user/cache/sft",
+            tokenizer_model="/src/init/Shared/openPangu-Embedded-7B-V1.1",
+            ckpt_load_dir="/src/init/user/ckpts/openPangu_7B_mcore",
+            ckpt_save_dir="/src/init/user/outputs/checkpoints/run",
+            log_path="/src/init/user/outputs/logs/run.log",
+            learning_rate="5e-6",
+            global_batch_size=4,
+            train_iters=100,
+            seq_length=8192,
+            save_interval=100,
+            lr_warmup_iters=20,
+            no_save_optim=True,
+        )
+
+        self.assertIn("--global-batch-size 4", command)
+        self.assertIn("--train-iters 100", command)
+        self.assertIn("--save-interval 100", command)
+        self.assertIn("--lr-warmup-iters 20", command)
+        self.assertIn("--no-save-optim", command)
+        self.assertIn("mkdir -p /src/init/user/outputs/logs /src/init/user/outputs/checkpoints/run", command)
 
 
 if __name__ == "__main__":

@@ -33,6 +33,12 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
+def _join_config_path(root: str, *parts: str) -> str:
+    if root.startswith("/"):
+        return "/".join([root.rstrip("/"), *[part.strip("/") for part in parts]])
+    return str(Path(root, *parts))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run openPangu MindSpeed SFT experiment.")
     parser.add_argument("--env", required=True, help="Path to exp2_2 env file.")
@@ -100,8 +106,9 @@ def main(argv: list[str] | None = None) -> int:
 
     all_metrics = []
     for index, run in enumerate(runs):
-        ckpt_save_dir = output_root / "checkpoints" / str(run["name"])
-        log_path = output_root / "logs" / f"{run['name']}.log"
+        ckpt_save_dir = _join_config_path(env.get("OUTPUT_ROOT", "outputs/exp2_2"), "checkpoints", str(run["name"]))
+        log_path = _join_config_path(env.get("OUTPUT_ROOT", "outputs/exp2_2"), "logs", f"{run['name']}.log")
+        train_iters = int(env.get("TRAIN_ITERS", "3200"))
         train_command = build_train_command(
             code_root=code_root,
             npu_devices=env.get("ASCEND_RT_VISIBLE_DEVICES", "0,1,2,3"),
@@ -110,17 +117,21 @@ def main(argv: list[str] | None = None) -> int:
             data_path=cache_prefix,
             tokenizer_model=env.get("TOKENIZER_MODEL", env.get("HF_MODEL_PATH", "")),
             ckpt_load_dir=env.get("MCORE_MODEL_PATH", str(output_root / "mcore_base")),
-            ckpt_save_dir=str(ckpt_save_dir),
-            log_path=str(log_path),
+            ckpt_save_dir=ckpt_save_dir,
+            log_path=log_path,
             learning_rate=str(run["learning_rate"]),
             global_batch_size=int(run["global_batch_size"]),
-            train_iters=int(env.get("TRAIN_ITERS", "3200")),
+            train_iters=train_iters,
             seq_length=seq_length,
+            save_interval=int(env.get("SAVE_INTERVAL", str(train_iters))),
+            lr_warmup_iters=int(env.get("LR_WARMUP_ITERS", "200")),
+            no_save_optim=get_bool(env, "NO_SAVE_OPTIM", False),
         )
         commands.append((f"train_{run['name']}", train_command))
         _run(train_command, dry_run=dry_run)
-        if log_path.exists():
-            for row in parse_training_log(log_path):
+        log_file = Path(log_path)
+        if log_file.exists():
+            for row in parse_training_log(log_file):
                 row["run_name"] = run["name"]
                 all_metrics.append(row)
 
@@ -129,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
 
     mcore_to_hf = build_mcore_to_hf_command(
         code_root=code_root,
-        load_mcore_dir=str(output_root / "checkpoints" / str(runs[0]["name"])),
+        load_mcore_dir=_join_config_path(env.get("OUTPUT_ROOT", "outputs/exp2_2"), "checkpoints", str(runs[0]["name"])),
         save_hf_dir=env.get("SFT_HF_OUTPUT_PATH", str(output_root / "hf_export")),
     )
     commands.append(("mcore_to_hf", mcore_to_hf))

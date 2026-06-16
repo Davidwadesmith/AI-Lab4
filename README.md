@@ -130,6 +130,44 @@ Main outputs:
 - `outputs/exp2_2/metrics/copywriting_metrics.csv`
 - `outputs/exp2_2/report_exp2_2.md`
 
+### Shared `/src/init/Shared` Course Environment
+
+If the server already provides the shared course resources, use the shared template instead of downloading model/data/MindSpeed again:
+
+```bash
+git clone https://github.com/Davidwadesmith/AI-Lab4.git
+cd AI-Lab4
+cp configs/exp2_2_shared.env.example configs/exp2_2.env
+```
+
+Edit `configs/exp2_2.env` and replace every `/src/init/09024126hcc` with your personal writable directory. Keep shared resources read-only:
+
+```bash
+MINDSPEED_LLM_ROOT=/src/init/Shared/MindSpeed-LLM
+HF_MODEL_PATH=/src/init/Shared/openPangu-Embedded-7B-V1.1
+TOKENIZER_MODEL=/src/init/Shared/openPangu-Embedded-7B-V1.1
+SOURCE_JSONL=/src/init/Shared/data/chinese_deepseek_r1_distill.jsonl
+
+OUTPUT_ROOT=/src/init/<your-user>/outputs/exp2_2
+VENV_DIR=/src/init/<your-user>/.venv
+MCORE_MODEL_PATH=/src/init/<your-user>/ckpts/openPangu_7B_mcore
+SFT_HF_OUTPUT_PATH=/src/init/<your-user>/hf_export/openPangu_sft_hf
+DATA_CACHE_PREFIX=/src/init/<your-user>/cache/finetune_pangu7b_xhs_seqlen8k/sft
+```
+
+The shared template uses space-saving defaults for the 500G environment:
+
+```bash
+TRAIN_ITERS=100
+SAVE_INTERVAL=100
+LR_WARMUP_ITERS=20
+NO_SAVE_OPTIM=1
+LEARNING_RATES=1e-5,5e-6,6e-7
+GLOBAL_BATCH_SIZES=4
+```
+
+These settings save only the final checkpoint for each run and skip optimizer-state saving. Do not set `SFT_HF_OUTPUT_PATH` or checkpoint paths under `/src/init/Shared`.
+
 ## Notes
 
 Do not commit model weights, raw datasets, MindSpeed source trees, checkpoints, or generated outputs. They are intentionally ignored by `.gitignore`.

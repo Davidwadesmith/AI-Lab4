@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Iterable
 
 
@@ -23,6 +22,13 @@ def build_run_matrix(
     return runs
 
 
+def _parent_dir(path: str) -> str:
+    normalized = path.rstrip("/")
+    if "/" in normalized:
+        return normalized.rsplit("/", 1)[0]
+    return "."
+
+
 def build_train_command(
     *,
     code_root: str,
@@ -38,8 +44,12 @@ def build_train_command(
     global_batch_size: int,
     train_iters: int,
     seq_length: int,
+    save_interval: int = 100,
+    lr_warmup_iters: int = 200,
+    no_save_optim: bool = False,
 ) -> str:
-    log_dir = Path(log_path).parent
+    log_dir = _parent_dir(log_path)
+    no_save_optim_arg = "  --no-save-optim \\\n" if no_save_optim else ""
     return f"""cd {code_root} && mkdir -p {log_dir} {ckpt_save_dir} && \\
 export CUDA_DEVICE_MAX_CONNECTIONS=1 && \\
 export ASCEND_RT_VISIBLE_DEVICES="{npu_devices}" && \\
@@ -80,7 +90,7 @@ torchrun \\
   --lr-decay-style cosine \\
   --lr {learning_rate} \\
   --min-lr 5e-7 \\
-  --lr-warmup-iters 200 \\
+  --lr-warmup-iters {lr_warmup_iters} \\
   --override-opt_param-scheduler \\
   --disable-bias-linear \\
   --add-qkv-bias \\
@@ -124,11 +134,12 @@ torchrun \\
   --use-distributed-optimizer \\
   --manual-gc \\
   --manual-gc-interval 100 \\
+{no_save_optim_arg}\
   --untie-embeddings-and-output-weights \\
   --data-path {data_path} \\
   --split 100,0,0 \\
   --log-interval 1 \\
-  --save-interval 100 \\
+  --save-interval {save_interval} \\
   --eval-interval 100 \\
   --eval-iters 0 \\
   --distributed-backend nccl \\
