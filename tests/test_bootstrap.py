@@ -40,6 +40,21 @@ class BootstrapPlanTests(unittest.TestCase):
 
         self.assertIn("python -m pip install setuptools==69.5.1", plan.commands)
 
+    def test_ninja_install_command_is_guarded(self):
+        plan = build_bootstrap_plan(
+            {
+                "AUTO_SETUP_ENV": "1",
+                "VENV_DIR": ".venv",
+                "NINJA_INSTALL_COMMAND": "python -m pip install ninja",
+            },
+            experiment="exp2_2",
+        )
+
+        self.assertIn(
+            "if ! command -v ninja >/dev/null 2>&1; then python -m pip install ninja; fi",
+            plan.commands,
+        )
+
     def test_exp2_2_plan_clones_mindspeed_and_downloads_data(self):
         plan = build_bootstrap_plan(
             {

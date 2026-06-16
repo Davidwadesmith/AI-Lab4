@@ -38,6 +38,42 @@ if [[ "${INSTALL_MINDSPEED:-1}" == "1" && -d "${MINDSPEED_LLM_ROOT:-}/MindSpeed"
   python -m pip install -e "${MINDSPEED_LLM_ROOT}/MindSpeed"
 fi
 
+NINJA_TARGET_DIR="${NINJA_TARGET_DIR:-${USER_ROOT:-${REPO_ROOT}}/python_pkgs}"
+if [[ -d "${NINJA_TARGET_DIR}" ]]; then
+  export PYTHONPATH="${NINJA_TARGET_DIR}:${PYTHONPATH:-}"
+fi
+
+_add_ninja_to_path() {
+  local ninja_bin_dir
+  ninja_bin_dir="$(python - <<'PY'
+try:
+    import ninja
+except Exception:
+    print("")
+else:
+    print(getattr(ninja, "BIN_DIR", ""))
+PY
+)"
+  if [[ -n "${ninja_bin_dir}" ]]; then
+    export PATH="${ninja_bin_dir}:${PATH}"
+  fi
+}
+
+_add_ninja_to_path
+if ! command -v ninja >/dev/null 2>&1; then
+  if [[ -n "${NINJA_INSTALL_COMMAND:-}" ]]; then
+    eval "${NINJA_INSTALL_COMMAND}"
+  else
+    python -m pip install --target "${NINJA_TARGET_DIR}" ninja
+    export PYTHONPATH="${NINJA_TARGET_DIR}:${PYTHONPATH:-}"
+  fi
+  _add_ninja_to_path
+fi
+if ! command -v ninja >/dev/null 2>&1; then
+  echo "[exp2_2] ninja is required by MindSpeed C++ extension builds but was not found" >&2
+  exit 3
+fi
+
 if command -v npu-smi >/dev/null 2>&1; then
   npu-smi info || true
 else

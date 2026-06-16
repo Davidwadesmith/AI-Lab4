@@ -49,6 +49,10 @@ def build_bootstrap_plan(env: Mapping[str, str], *, experiment: str) -> Bootstra
     if setuptools_install:
         commands.append(setuptools_install)
 
+    ninja_install = env.get("NINJA_INSTALL_COMMAND", "").strip()
+    if ninja_install:
+        commands.append(f"if ! command -v ninja >/dev/null 2>&1; then {ninja_install}; fi")
+
     torch_install = env.get("TORCH_INSTALL_COMMAND", "").strip()
     torch_npu_install = env.get("TORCH_NPU_INSTALL_COMMAND", "").strip()
     if torch_install:

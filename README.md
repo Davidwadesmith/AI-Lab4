@@ -41,6 +41,8 @@ PYTHON_BIN=python3.10
 VENV_DIR=.venv
 ASCEND_TOOLKIT_ENV=/usr/local/Ascend/ascend-toolkit/set_env.sh
 SETUPTOOLS_INSTALL_COMMAND=
+NINJA_INSTALL_COMMAND=
+NINJA_TARGET_DIR=
 
 # Fill these only if your image does not already contain compatible packages.
 TORCH_INSTALL_COMMAND="pip install torch==2.1.0"
@@ -94,6 +96,8 @@ PYTHON_BIN=python3.10
 VENV_DIR=.venv
 ASCEND_TOOLKIT_ENV=/usr/local/Ascend/ascend-toolkit/set_env.sh
 SETUPTOOLS_INSTALL_COMMAND=
+NINJA_INSTALL_COMMAND=
+NINJA_TARGET_DIR=
 
 # Fill these only if your image does not already contain compatible packages.
 TORCH_INSTALL_COMMAND="pip install torch==2.1.0"
@@ -161,6 +165,7 @@ The shared template uses space-saving defaults for the 500G environment:
 
 ```bash
 SETUPTOOLS_INSTALL_COMMAND="python -m pip install setuptools==69.5.1"
+NINJA_TARGET_DIR=/src/init/<your-user>/python_pkgs
 TRAIN_ITERS=100
 SAVE_INTERVAL=100
 LR_WARMUP_ITERS=20
@@ -170,6 +175,8 @@ GLOBAL_BATCH_SIZES=4
 ```
 
 These settings save only the final checkpoint for each run and skip optimizer-state saving. Do not set `SFT_HF_OUTPUT_PATH` or checkpoint paths under `/src/init/Shared`.
+
+MindSpeed may compile C++ extensions during preprocessing. If `ninja` is missing, `scripts/run_exp2_2_sft.sh` installs the PyPI `ninja` package into `NINJA_TARGET_DIR` and adds its binary directory to `PATH` before running MindSpeed.
 
 ## Notes
 
