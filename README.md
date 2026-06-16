@@ -160,7 +160,7 @@ DATA_CACHE_PREFIX=/src/init/<your-user>/cache/finetune_pangu7b_xhs_seqlen8k/sft
 The shared template uses space-saving defaults for the 500G environment:
 
 ```bash
-SETUPTOOLS_INSTALL_COMMAND=python -m pip install "setuptools<70"
+SETUPTOOLS_INSTALL_COMMAND=python -m pip install setuptools==69.5.1
 TRAIN_ITERS=100
 SAVE_INTERVAL=100
 LR_WARMUP_ITERS=20

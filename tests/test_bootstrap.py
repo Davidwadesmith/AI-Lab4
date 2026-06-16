@@ -33,12 +33,12 @@ class BootstrapPlanTests(unittest.TestCase):
             {
                 "AUTO_SETUP_ENV": "1",
                 "VENV_DIR": ".venv",
-                "SETUPTOOLS_INSTALL_COMMAND": 'python -m pip install "setuptools<70"',
+                "SETUPTOOLS_INSTALL_COMMAND": "python -m pip install setuptools==69.5.1",
             },
             experiment="exp2_2",
         )
 
-        self.assertIn('python -m pip install "setuptools<70"', plan.commands)
+        self.assertIn("python -m pip install setuptools==69.5.1", plan.commands)
 
     def test_exp2_2_plan_clones_mindspeed_and_downloads_data(self):
         plan = build_bootstrap_plan(
