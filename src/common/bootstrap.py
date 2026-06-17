@@ -64,8 +64,9 @@ def build_bootstrap_plan(env: Mapping[str, str], *, experiment: str) -> Bootstra
     model_download = env.get("MODEL_DOWNLOAD_COMMAND", "").strip()
     if model_download:
         model_path = env.get("MODEL_PATH" if experiment == "exp2_1" else "HF_MODEL_PATH", "").strip()
-        if model_path:
-            commands.append(_path_exists_guard(model_path, model_download))
+        model_guard = env.get("MODEL_DOWNLOAD_GUARD", "").strip() or model_path
+        if model_guard:
+            commands.append(_path_exists_guard(model_guard, model_download))
 
     data_download = env.get("DATA_DOWNLOAD_COMMAND", "").strip()
     if data_download and experiment == "exp2_2":

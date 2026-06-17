@@ -68,6 +68,23 @@ class BootstrapPlanTests(unittest.TestCase):
             plan.commands,
         )
 
+    def test_model_download_can_use_file_guard(self):
+        plan = build_bootstrap_plan(
+            {
+                "AUTO_SETUP_ENV": "1",
+                "VENV_DIR": ".venv",
+                "HF_MODEL_PATH": "/models/pangu_hf",
+                "MODEL_DOWNLOAD_GUARD": "/models/pangu_hf/config.json",
+                "MODEL_DOWNLOAD_COMMAND": "python -m src.common.download_hf repo /models/pangu_hf",
+            },
+            experiment="exp2_2",
+        )
+
+        self.assertIn(
+            'if [[ ! -e "/models/pangu_hf/config.json" ]]; then python -m src.common.download_hf repo /models/pangu_hf; fi',
+            plan.commands,
+        )
+
     def test_exp2_2_plan_clones_mindspeed_and_downloads_data(self):
         plan = build_bootstrap_plan(
             {

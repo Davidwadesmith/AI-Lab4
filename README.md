@@ -117,6 +117,8 @@ The default configs download:
 - Dataset: `Congliu/Chinese-DeepSeek-R1-Distill-data-110k-SFT`, streamed and filtered to `repo_name == "xhs/xhs"`
 - Code: `https://github.com/Ascend/MindSpeed-LLM.git`
 
+The env examples set `HF_ENDPOINT=https://hf-mirror.com` for mainland-China server networks. If a download times out and leaves a partial model directory, rerun the script; the guard checks `${MODEL_PATH}/config.json`, not just the directory.
+
 If your course image requires a specific MindSpeed-LLM commit or branch, set `MINDSPEED_LLM_REF` in `configs/exp2_2.env`.
 
 ## Common Knobs
