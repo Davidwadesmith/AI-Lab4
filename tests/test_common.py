@@ -1,7 +1,10 @@
 import tempfile
 import unittest
+import sys
+from types import SimpleNamespace
 from pathlib import Path
 
+from src.common.download_hf import main as download_hf_main
 from src.common.env import load_env_file
 from src.common.io import read_jsonl, write_jsonl
 
@@ -41,6 +44,32 @@ class CommonUtilityTests(unittest.TestCase):
             loaded = list(read_jsonl(path))
 
         self.assertEqual(loaded, rows)
+
+    def test_download_hf_uses_snapshot_download(self):
+        original = sys.modules.get("huggingface_hub")
+        calls = []
+        sys.modules["huggingface_hub"] = SimpleNamespace(snapshot_download=lambda **kwargs: calls.append(kwargs))
+        try:
+            result = download_hf_main(["org/model", "/tmp/model"])
+        finally:
+            if original is None:
+                sys.modules.pop("huggingface_hub", None)
+            else:
+                sys.modules["huggingface_hub"] = original
+
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            calls,
+            [
+                {
+                    "repo_id": "org/model",
+                    "repo_type": "model",
+                    "local_dir": "/tmp/model",
+                    "local_dir_use_symlinks": False,
+                    "resume_download": True,
+                }
+            ],
+        )
 
 
 if __name__ == "__main__":
