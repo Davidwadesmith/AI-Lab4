@@ -14,8 +14,8 @@ from src.exp2_2_sft.train import build_run_matrix, build_train_command
 class SftExperimentTests(unittest.TestCase):
     def test_join_config_path_preserves_linux_absolute_paths(self):
         self.assertEqual(
-            _join_config_path("/src/init/user/outputs/exp2_2", "logs", "run.log"),
-            "/src/init/user/outputs/exp2_2/logs/run.log",
+            _join_config_path("/home/ma-user/work/openpangu_lab/outputs/exp2_2", "logs", "run.log"),
+            "/home/ma-user/work/openpangu_lab/outputs/exp2_2/logs/run.log",
         )
 
     def test_convert_xhs_records_filters_and_formats_mindspeed_jsonl(self):
@@ -30,6 +30,17 @@ class SftExperimentTests(unittest.TestCase):
         self.assertEqual(converted[0]["meta_prompt"], [])
         self.assertEqual(converted[0]["data"][0]["role"], "user")
         self.assertEqual(converted[0]["data"][1]["role"], "assistant")
+
+    def test_convert_xhs_records_respects_max_records(self):
+        records = [
+            {"repo_name": "xhs/xhs", "instruction": "a", "output": "b"},
+            {"repo_name": "xhs/xhs", "instruction": "c", "output": "d"},
+        ]
+
+        converted = list(convert_xhs_records(records, max_records=1))
+
+        self.assertEqual(len(converted), 1)
+        self.assertEqual(converted[0]["data"][0]["content"], "a")
 
     def test_parse_training_log_extracts_loss_values(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -75,8 +86,10 @@ class SftExperimentTests(unittest.TestCase):
 
     def test_load_dataset_records_reads_configured_split(self):
         original = sys.modules.get("datasets")
+        calls = []
         sys.modules["datasets"] = SimpleNamespace(
-            load_dataset=lambda path: {"train": [{"repo_name": "xhs/xhs", "instruction": "a", "output": "b"}]}
+            load_dataset=lambda path, **kwargs: calls.append((path, kwargs))
+            or {"train": [{"repo_name": "xhs/xhs", "instruction": "a", "output": "b"}]}
         )
         try:
             records = list(load_dataset_records("/dataset/path", split="train"))
@@ -87,18 +100,37 @@ class SftExperimentTests(unittest.TestCase):
                 sys.modules["datasets"] = original
 
         self.assertEqual(records[0]["instruction"], "a")
+        self.assertEqual(calls[0], ("/dataset/path", {"split": None, "streaming": False}))
+
+    def test_load_dataset_records_supports_streaming_split(self):
+        original = sys.modules.get("datasets")
+        calls = []
+        sys.modules["datasets"] = SimpleNamespace(
+            load_dataset=lambda path, **kwargs: calls.append((path, kwargs))
+            or iter([{"repo_name": "xhs/xhs", "instruction": "a", "output": "b"}])
+        )
+        try:
+            records = list(load_dataset_records("/dataset/path", split="train", streaming=True))
+        finally:
+            if original is None:
+                sys.modules.pop("datasets", None)
+            else:
+                sys.modules["datasets"] = original
+
+        self.assertEqual(records[0]["instruction"], "a")
+        self.assertEqual(calls[0], ("/dataset/path", {"split": "train", "streaming": True}))
 
     def test_build_train_command_uses_space_saving_training_options(self):
         command = build_train_command(
-            code_root="/src/init/Shared/MindSpeed-LLM",
+            code_root="/home/ma-user/work/openpangu_lab/MindSpeed-LLM",
             npu_devices="0,1,2,3",
             npus_per_node=4,
             master_port=6000,
-            data_path="/src/init/user/cache/sft",
-            tokenizer_model="/src/init/Shared/openPangu-Embedded-7B-V1.1",
-            ckpt_load_dir="/src/init/user/ckpts/openPangu_7B_mcore",
-            ckpt_save_dir="/src/init/user/outputs/checkpoints/run",
-            log_path="/src/init/user/outputs/logs/run.log",
+            data_path="/home/ma-user/work/openpangu_lab/cache/sft",
+            tokenizer_model="/home/ma-user/work/openpangu_lab/models/openPangu-Embedded-7B-V1.1",
+            ckpt_load_dir="/home/ma-user/work/openpangu_lab/ckpts/openPangu_7B_mcore",
+            ckpt_save_dir="/home/ma-user/work/openpangu_lab/outputs/checkpoints/run",
+            log_path="/home/ma-user/work/openpangu_lab/outputs/logs/run.log",
             learning_rate="5e-6",
             global_batch_size=4,
             train_iters=100,
@@ -113,7 +145,7 @@ class SftExperimentTests(unittest.TestCase):
         self.assertIn("--save-interval 100", command)
         self.assertIn("--lr-warmup-iters 20", command)
         self.assertIn("--no-save-optim", command)
-        self.assertIn("mkdir -p /src/init/user/outputs/logs /src/init/user/outputs/checkpoints/run", command)
+        self.assertIn("mkdir -p /home/ma-user/work/openpangu_lab/outputs/logs /home/ma-user/work/openpangu_lab/outputs/checkpoints/run", command)
 
 
 if __name__ == "__main__":

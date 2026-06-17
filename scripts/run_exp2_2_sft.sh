@@ -16,6 +16,13 @@ set -a
 source "${ENV_FILE}"
 set +a
 
+if [[ -n "${PATH_EXTRA:-}" ]]; then
+  export PATH="${PATH_EXTRA}:${PATH}"
+fi
+if [[ -n "${PYTHONPATH_EXTRA:-}" ]]; then
+  export PYTHONPATH="${PYTHONPATH_EXTRA}:${PYTHONPATH:-}"
+fi
+
 echo "[exp2_2] run mode: ${RUN_MODE:-smoke}"
 BOOTSTRAP_PYTHON="${PYTHON_BIN:-python3.10}"
 if ! command -v "${BOOTSTRAP_PYTHON}" >/dev/null 2>&1; then

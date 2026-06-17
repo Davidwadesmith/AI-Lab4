@@ -15,6 +15,8 @@ class CommonUtilityTests(unittest.TestCase):
                     [
                         "# comment",
                         "MODEL_PATH=/models/pangu",
+                        "WORK_ROOT=/work/openpangu_lab",
+                        "CACHE_PATH=${WORK_ROOT}/cache/sft",
                         "export RUN_MODE='smoke'",
                         'OUTPUT_ROOT="outputs/exp2_1"',
                         "EMPTY=",
@@ -26,6 +28,7 @@ class CommonUtilityTests(unittest.TestCase):
             values = load_env_file(env_path)
 
         self.assertEqual(values["MODEL_PATH"], "/models/pangu")
+        self.assertEqual(values["CACHE_PATH"], "/work/openpangu_lab/cache/sft")
         self.assertEqual(values["RUN_MODE"], "smoke")
         self.assertEqual(values["OUTPUT_ROOT"], "outputs/exp2_1")
         self.assertEqual(values["EMPTY"], "")

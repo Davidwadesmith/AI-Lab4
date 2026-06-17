@@ -1,6 +1,10 @@
 datasets
+huggingface_hub
+accelerate
 jieba
 numpy
 pandas
 matplotlib
+protobuf
+sentencepiece
 transformers==4.53.2

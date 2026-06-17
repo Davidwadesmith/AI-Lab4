@@ -43,6 +43,11 @@ def _ensure_preprocess_output_dir(output_prefix: str) -> Path:
     return ensure_dir(Path(output_prefix).parent)
 
 
+def _get_optional_int(env: dict[str, str], key: str) -> int | None:
+    value = env.get(key, "").strip()
+    return int(value) if value else None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run openPangu MindSpeed SFT experiment.")
     parser.add_argument("--env", required=True, help="Path to exp2_2 env file.")
@@ -56,12 +61,9 @@ def main(argv: list[str] | None = None) -> int:
 
     source_jsonl = env.get("SOURCE_JSONL", "")
     source_dataset_path = env.get("SOURCE_DATASET_PATH", "")
+    max_train_records = _get_optional_int(env, "MAX_TRAIN_RECORDS")
     train_jsonl = output_root / "data" / "train_xhs_dataset.jsonl"
-    if source_jsonl and Path(source_jsonl).exists():
-        convert_jsonl_file(source_jsonl, train_jsonl)
-    elif source_dataset_path:
-        convert_dataset_path(source_dataset_path, train_jsonl, split=env.get("SOURCE_DATASET_SPLIT", "train"))
-    else:
+    if run_mode == "smoke":
         sample = [
             {
                 "meta_prompt": [],
@@ -72,6 +74,18 @@ def main(argv: list[str] | None = None) -> int:
             }
         ]
         write_jsonl(train_jsonl, sample)
+    elif source_jsonl and Path(source_jsonl).exists():
+        convert_jsonl_file(source_jsonl, train_jsonl, max_records=max_train_records)
+    elif source_dataset_path:
+        convert_dataset_path(
+            source_dataset_path,
+            train_jsonl,
+            split=env.get("SOURCE_DATASET_SPLIT", "train"),
+            streaming=get_bool(env, "SOURCE_DATASET_STREAMING", False),
+            max_records=max_train_records,
+        )
+    else:
+        raise ValueError("full mode requires SOURCE_JSONL or SOURCE_DATASET_PATH")
 
     code_root = env.get("MINDSPEED_LLM_ROOT", "/home/ma-user/work/MindSpeed-LLM")
     seq_length = int(env.get("SEQ_LENGTH", "8192"))

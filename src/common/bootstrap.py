@@ -41,7 +41,8 @@ def build_bootstrap_plan(env: Mapping[str, str], *, experiment: str) -> Bootstra
     if conda_env:
         commands.append(f"eval \"$(conda shell.bash hook)\" && conda activate {_quoted(conda_env)}")
     elif venv_dir:
-        commands.append(f"if [[ ! -d {_quoted(venv_dir)} ]]; then {python_bin} -m venv {_quoted(venv_dir)}; fi")
+        system_site = " --system-site-packages" if _enabled(env, "VENV_SYSTEM_SITE_PACKAGES", "0") else ""
+        commands.append(f"if [[ ! -d {_quoted(venv_dir)} ]]; then {python_bin} -m venv{system_site} {_quoted(venv_dir)}; fi")
         commands.append(f"source {_quoted(venv_dir.rstrip('/') + '/bin/activate')}")
 
     commands.append("python -m pip install --upgrade pip wheel")
@@ -84,6 +85,7 @@ def build_bootstrap_plan(env: Mapping[str, str], *, experiment: str) -> Bootstra
             commands.append(f"if [[ ! -d {_quoted(root.rstrip('/') + '/.git')} ]]; then git clone {_quoted(repo)} {_quoted(root)}; fi")
             if ref:
                 commands.append(f"git -C {_quoted(root)} checkout {_quoted(ref)}")
+            commands.append(f"if [[ -f {_quoted(root.rstrip('/') + '/.gitmodules')} ]]; then git -C {_quoted(root)} submodule update --init --recursive; fi")
 
     return BootstrapPlan(commands)
 

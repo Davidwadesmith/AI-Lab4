@@ -40,6 +40,19 @@ class BootstrapPlanTests(unittest.TestCase):
 
         self.assertIn("python -m pip install setuptools==69.5.1", plan.commands)
 
+    def test_venv_can_reuse_system_site_packages(self):
+        plan = build_bootstrap_plan(
+            {
+                "AUTO_SETUP_ENV": "1",
+                "PYTHON_BIN": "python3.10",
+                "VENV_DIR": "/work/.venv",
+                "VENV_SYSTEM_SITE_PACKAGES": "1",
+            },
+            experiment="exp2_2",
+        )
+
+        self.assertIn('if [[ ! -d "/work/.venv" ]]; then python3.10 -m venv --system-site-packages "/work/.venv"; fi', plan.commands)
+
     def test_ninja_install_command_is_guarded(self):
         plan = build_bootstrap_plan(
             {
@@ -76,6 +89,7 @@ class BootstrapPlanTests(unittest.TestCase):
             plan.commands,
         )
         self.assertIn('git -C "/work/MindSpeed-LLM" checkout "2.1.0"', plan.commands)
+        self.assertIn('if [[ -f "/work/MindSpeed-LLM/.gitmodules" ]]; then git -C "/work/MindSpeed-LLM" submodule update --init --recursive; fi', plan.commands)
         self.assertIn('if [[ ! -e "/models/pangu_hf" ]]; then git clone https://example.invalid/pangu /models/pangu_hf; fi', plan.commands)
         self.assertIn('if [[ ! -e "/data/train.jsonl" ]]; then python scripts/download_data.py; fi', plan.commands)
 

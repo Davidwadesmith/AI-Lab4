@@ -11,6 +11,14 @@ def _strip_quotes(value: str) -> str:
     return value
 
 
+def _expand_env_refs(value: str, values: Mapping[str, str]) -> str:
+    expanded = value
+    for key, replacement in {**os.environ, **values}.items():
+        expanded = expanded.replace("${" + key + "}", replacement)
+        expanded = expanded.replace("$" + key, replacement)
+    return expanded
+
+
 def load_env_file(path: str | Path, *, update_os: bool = False) -> dict[str, str]:
     env_path = Path(path)
     values: dict[str, str] = {}
@@ -27,7 +35,7 @@ def load_env_file(path: str | Path, *, update_os: bool = False) -> dict[str, str
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        value = _strip_quotes(value.strip())
+        value = _expand_env_refs(_strip_quotes(value.strip()), values)
         values[key] = value
         if update_os:
             os.environ[key] = value
