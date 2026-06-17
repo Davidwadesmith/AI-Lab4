@@ -50,7 +50,7 @@ class CommonUtilityTests(unittest.TestCase):
         calls = []
         sys.modules["huggingface_hub"] = SimpleNamespace(snapshot_download=lambda **kwargs: calls.append(kwargs))
         try:
-            result = download_hf_main(["org/model", "/tmp/model"])
+            result = download_hf_main(["org/model", "/tmp/model", "--max-workers", "1", "--etag-timeout", "120", "--download-timeout", "120"])
         finally:
             if original is None:
                 sys.modules.pop("huggingface_hub", None)
@@ -67,6 +67,8 @@ class CommonUtilityTests(unittest.TestCase):
                     "local_dir": "/tmp/model",
                     "local_dir_use_symlinks": False,
                     "resume_download": True,
+                    "max_workers": 1,
+                    "etag_timeout": 120,
                 }
             ],
         )
