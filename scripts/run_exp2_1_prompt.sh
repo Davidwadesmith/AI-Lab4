@@ -16,6 +16,10 @@ set -a
 source "${ENV_FILE}"
 set +a
 
+if [[ -n "${ASCEND_TOOLKIT_ENV:-}" && -f "${ASCEND_TOOLKIT_ENV}" ]]; then
+  source "${ASCEND_TOOLKIT_ENV}"
+fi
+
 if [[ -n "${PATH_EXTRA:-}" ]]; then
   export PATH="${PATH_EXTRA}:${PATH}"
 fi
