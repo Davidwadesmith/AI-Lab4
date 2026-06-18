@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import sys
+import os
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -44,6 +45,25 @@ class CommonUtilityTests(unittest.TestCase):
             loaded = list(read_jsonl(path))
 
         self.assertEqual(loaded, rows)
+
+    def test_load_env_file_preserves_existing_pythonpath_when_updating_os(self):
+        old_pythonpath = os.environ.get("PYTHONPATH")
+        os.environ["PYTHONPATH"] = "/cann/tbe"
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                env_path = Path(tmp) / "sample.env"
+                env_path.write_text("export PYTHONPATH=/mindspeed:${PYTHONPATH:-}\n", encoding="utf-8")
+
+                values = load_env_file(env_path, update_os=True)
+
+            self.assertIn("/mindspeed", values["PYTHONPATH"])
+            self.assertIn("/cann/tbe", os.environ["PYTHONPATH"])
+            self.assertIn("/mindspeed", os.environ["PYTHONPATH"])
+        finally:
+            if old_pythonpath is None:
+                os.environ.pop("PYTHONPATH", None)
+            else:
+                os.environ["PYTHONPATH"] = old_pythonpath
 
     def test_download_hf_uses_snapshot_download(self):
         original = sys.modules.get("huggingface_hub")

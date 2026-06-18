@@ -14,9 +14,23 @@ def _strip_quotes(value: str) -> str:
 def _expand_env_refs(value: str, values: Mapping[str, str]) -> str:
     expanded = value
     for key, replacement in {**os.environ, **values}.items():
+        expanded = expanded.replace("${" + key + ":-}", replacement)
         expanded = expanded.replace("${" + key + "}", replacement)
         expanded = expanded.replace("$" + key, replacement)
     return expanded
+
+
+def _merge_path_value(key: str, value: str) -> str:
+    if key not in {"PATH", "PYTHONPATH"}:
+        return value
+    existing = os.environ.get(key, "")
+    if not existing:
+        return value
+    parts = [part for part in value.split(":") if part]
+    for part in existing.split(":"):
+        if part and part not in parts:
+            parts.append(part)
+    return ":".join(parts)
 
 
 def load_env_file(path: str | Path, *, update_os: bool = False) -> dict[str, str]:
@@ -38,7 +52,7 @@ def load_env_file(path: str | Path, *, update_os: bool = False) -> dict[str, str
         value = _expand_env_refs(_strip_quotes(value.strip()), values)
         values[key] = value
         if update_os:
-            os.environ[key] = value
+            os.environ[key] = _merge_path_value(key, value)
     return values
 
 
