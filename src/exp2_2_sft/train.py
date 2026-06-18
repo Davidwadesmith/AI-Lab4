@@ -51,6 +51,8 @@ def build_train_command(
     reuse_fp32_param: bool = True,
     overlap_param_gather: bool = False,
     overlap_grad_reduce: bool = False,
+    use_distributed_optimizer: bool = False,
+    npu_alloc_conf: str = "expandable_segments:True,max_split_size_mb:64",
 ) -> str:
     log_dir = _parent_dir(log_path)
     no_save_optim_arg = "  --no-save-optim \\\n" if no_save_optim else ""
@@ -58,9 +60,10 @@ def build_train_command(
     reuse_fp32_param_arg = "  --reuse-fp32-param \\\n" if reuse_fp32_param else ""
     overlap_param_gather_arg = "  --overlap-param-gather \\\n" if overlap_param_gather else ""
     overlap_grad_reduce_arg = "  --overlap-grad-reduce \\\n" if overlap_grad_reduce else ""
+    distributed_optimizer_arg = "  --use-distributed-optimizer \\\n" if use_distributed_optimizer else ""
     command = f"""cd {code_root} && mkdir -p {log_dir} {ckpt_save_dir} && \\
 export CUDA_DEVICE_MAX_CONNECTIONS=1 && \\
-export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True && \\
+export PYTORCH_NPU_ALLOC_CONF={npu_alloc_conf} && \\
 export ASCEND_RT_VISIBLE_DEVICES="{npu_devices}" && \\
 torchrun \\
   --nproc_per_node {npus_per_node} \\
@@ -140,7 +143,7 @@ torchrun \\
   --recompute-num-layers 34 \\
 {overlap_param_gather_arg}\
 {overlap_grad_reduce_arg}\
-  --use-distributed-optimizer \\
+{distributed_optimizer_arg}\
 {reuse_fp32_param_arg}\
   --manual-gc \\
   --manual-gc-interval 100 \\

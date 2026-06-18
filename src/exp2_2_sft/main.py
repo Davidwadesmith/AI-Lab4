@@ -149,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
             reuse_fp32_param=get_bool(env, "REUSE_FP32_PARAM", True),
             overlap_param_gather=get_bool(env, "OVERLAP_PARAM_GATHER", False),
             overlap_grad_reduce=get_bool(env, "OVERLAP_GRAD_REDUCE", False),
+            use_distributed_optimizer=get_bool(env, "USE_DISTRIBUTED_OPTIMIZER", False),
+            npu_alloc_conf=env.get("PYTORCH_NPU_ALLOC_CONF", "expandable_segments:True,max_split_size_mb:64"),
         )
         commands.append((f"train_{run['name']}", train_command))
         _run(train_command, dry_run=dry_run)
