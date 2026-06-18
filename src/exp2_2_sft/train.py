@@ -47,11 +47,14 @@ def build_train_command(
     save_interval: int = 100,
     lr_warmup_iters: int = 200,
     no_save_optim: bool = False,
+    accumulate_allreduce_grads_in_fp32: bool = False,
 ) -> str:
     log_dir = _parent_dir(log_path)
     no_save_optim_arg = "  --no-save-optim \\\n" if no_save_optim else ""
-    return f"""cd {code_root} && mkdir -p {log_dir} {ckpt_save_dir} && \\
+    fp32_allreduce_arg = "  --accumulate-allreduce-grads-in-fp32 \\\n" if accumulate_allreduce_grads_in_fp32 else ""
+    command = f"""cd {code_root} && mkdir -p {log_dir} {ckpt_save_dir} && \\
 export CUDA_DEVICE_MAX_CONNECTIONS=1 && \\
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True && \\
 export ASCEND_RT_VISIBLE_DEVICES="{npu_devices}" && \\
 torchrun \\
   --nproc_per_node {npus_per_node} \\
@@ -110,7 +113,7 @@ torchrun \\
   --use-flash-attn \\
   --use-fused-rotary-pos-emb \\
   --attention-softmax-in-fp32 \\
-  --accumulate-allreduce-grads-in-fp32 \\
+{fp32_allreduce_arg}\
   --optimizer adam \\
   --weight-decay 0.1 \\
   --clip-grad 1.0 \\
@@ -146,3 +149,4 @@ torchrun \\
   --load {ckpt_load_dir} \\
   --save {ckpt_save_dir} \\
   | tee {log_path}"""
+    return f"bash -lc 'set -o pipefail; {command}'"
