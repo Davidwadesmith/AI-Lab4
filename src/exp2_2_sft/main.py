@@ -147,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
             no_save_optim=get_bool(env, "NO_SAVE_OPTIM", False),
             accumulate_allreduce_grads_in_fp32=get_bool(env, "ACCUMULATE_ALLREDUCE_GRADS_IN_FP32", False),
             reuse_fp32_param=get_bool(env, "REUSE_FP32_PARAM", True),
+            overlap_param_gather=get_bool(env, "OVERLAP_PARAM_GATHER", False),
+            overlap_grad_reduce=get_bool(env, "OVERLAP_GRAD_REDUCE", False),
         )
         commands.append((f"train_{run['name']}", train_command))
         _run(train_command, dry_run=dry_run)

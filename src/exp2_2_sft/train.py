@@ -49,11 +49,15 @@ def build_train_command(
     no_save_optim: bool = False,
     accumulate_allreduce_grads_in_fp32: bool = False,
     reuse_fp32_param: bool = True,
+    overlap_param_gather: bool = False,
+    overlap_grad_reduce: bool = False,
 ) -> str:
     log_dir = _parent_dir(log_path)
     no_save_optim_arg = "  --no-save-optim \\\n" if no_save_optim else ""
     fp32_allreduce_arg = "  --accumulate-allreduce-grads-in-fp32 \\\n" if accumulate_allreduce_grads_in_fp32 else ""
     reuse_fp32_param_arg = "  --reuse-fp32-param \\\n" if reuse_fp32_param else ""
+    overlap_param_gather_arg = "  --overlap-param-gather \\\n" if overlap_param_gather else ""
+    overlap_grad_reduce_arg = "  --overlap-grad-reduce \\\n" if overlap_grad_reduce else ""
     command = f"""cd {code_root} && mkdir -p {log_dir} {ckpt_save_dir} && \\
 export CUDA_DEVICE_MAX_CONNECTIONS=1 && \\
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True && \\
@@ -134,8 +138,8 @@ torchrun \\
   --recompute-granularity full \\
   --recompute-method block \\
   --recompute-num-layers 34 \\
-  --overlap-param-gather \\
-  --overlap-grad-reduce \\
+{overlap_param_gather_arg}\
+{overlap_grad_reduce_arg}\
   --use-distributed-optimizer \\
 {reuse_fp32_param_arg}\
   --manual-gc \\

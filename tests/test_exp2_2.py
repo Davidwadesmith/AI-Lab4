@@ -148,6 +148,8 @@ class SftExperimentTests(unittest.TestCase):
         self.assertIn("set -o pipefail", command)
         self.assertIn("PYTORCH_NPU_ALLOC_CONF=expandable_segments:True", command)
         self.assertIn("--reuse-fp32-param", command)
+        self.assertNotIn("--overlap-param-gather", command)
+        self.assertNotIn("--overlap-grad-reduce", command)
         self.assertNotIn("--accumulate-allreduce-grads-in-fp32", command)
         self.assertIn("mkdir -p /home/ma-user/work/openpangu_lab/outputs/logs /home/ma-user/work/openpangu_lab/outputs/checkpoints/run", command)
 
@@ -190,6 +192,28 @@ class SftExperimentTests(unittest.TestCase):
         )
 
         self.assertNotIn("--reuse-fp32-param", command)
+
+    def test_build_train_command_can_enable_overlap_flags(self):
+        command = build_train_command(
+            code_root="/work/MindSpeed-LLM",
+            npu_devices="0,1,2,3",
+            npus_per_node=4,
+            master_port=6000,
+            data_path="/work/cache/sft",
+            tokenizer_model="/work/model",
+            ckpt_load_dir="/work/ckpts/mcore",
+            ckpt_save_dir="/work/outputs/checkpoints/run",
+            log_path="/work/outputs/logs/run.log",
+            learning_rate="5e-5",
+            global_batch_size=4,
+            train_iters=100,
+            seq_length=8192,
+            overlap_param_gather=True,
+            overlap_grad_reduce=True,
+        )
+
+        self.assertIn("--overlap-param-gather", command)
+        self.assertIn("--overlap-grad-reduce", command)
 
 
 if __name__ == "__main__":
