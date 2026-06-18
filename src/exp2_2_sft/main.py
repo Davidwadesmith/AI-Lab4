@@ -146,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
             lr_warmup_iters=int(env.get("LR_WARMUP_ITERS", "200")),
             no_save_optim=get_bool(env, "NO_SAVE_OPTIM", False),
             accumulate_allreduce_grads_in_fp32=get_bool(env, "ACCUMULATE_ALLREDUCE_GRADS_IN_FP32", False),
+            reuse_fp32_param=get_bool(env, "REUSE_FP32_PARAM", True),
         )
         commands.append((f"train_{run['name']}", train_command))
         _run(train_command, dry_run=dry_run)
